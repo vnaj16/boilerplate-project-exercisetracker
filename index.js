@@ -14,13 +14,7 @@ app.get('/', (req, res) => {
 });
 
 //#region MONGODB SCHEMES
-let userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-  }
-})
-
+//https://stackoverflow.com/questions/50316456/how-to-show-relationship-in-mongoose 
 let exerciseSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -37,6 +31,13 @@ let exerciseSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: false,
+  }
+})
+
+let userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
   }
 })
 
@@ -66,8 +67,26 @@ const getAllUsers = (done) => {
       console.error(err);
       done(err);
     }
-    console.log("People found", data)
+    // console.log("People found", data)
     done(null , data);
+  })
+}
+
+const createAndSaveExercise = (username, exercise, done) => {
+  let exerciseModel = new Exercise({
+    username: username,
+    description: exercise.description,
+    duration: exercise.duration,
+    date: exercise.date
+  })
+
+  exerciseModel.save(function (err, data) {
+    if (err) {
+      console.error(err);
+      done(err);
+    }
+    console.log("Exercise created", data)
+    done(null, data);
   })
 }
 //#endregion
@@ -98,7 +117,26 @@ app.get("/api/users", function (req, res) {
       res.json({"error": err});
     }
 
-    console.log("Al parecer todo ok - GET ALL USERS: ", data)
+    // console.log("Al parecer todo ok - GET ALL USERS: ", data)
+    res.json(data)
+  })
+})
+
+app.post("/api/users/:id/exercises", function (req, res) {
+  let userid = req.params.id;
+  let username = userid; //TODO: pending retrieve the username by id
+  let exerciseToRegister = {
+    description: req.body.description,
+    duration: req.body.duration,
+    date: req.body.date
+  }
+  createAndSaveExercise(username, exerciseToRegister, function (err, data){
+    if (err) {
+      console.log("ERROR", err)
+      res.json({"error": err});
+    }
+
+    console.log("Al parecer todo ok - CREATE AND SAVE EXERCISE: ", data)
     res.json(data)
   })
 })
