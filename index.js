@@ -21,7 +21,27 @@ let userSchema = new mongoose.Schema({
   }
 })
 
+let exerciseSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  duration: {
+    type: Number,
+    required: true,
+  },
+  date: {
+    type: Date,
+    required: false,
+  }
+})
+
 let User = mongoose.model('User', userSchema);
+let Exercise = mongoose.model("Exercise", exerciseSchema)
 //#endregion
 
 //#region MONGODB FUNCTIONS
