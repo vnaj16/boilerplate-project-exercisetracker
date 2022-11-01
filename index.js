@@ -43,17 +43,25 @@ const createAndSaveUser = (user, done) => {
 
 //#region Create a New User
 app.post("/api/users", function (req, res) {
-  console.log(req.body.username)
+  console.log(req.body)
   createAndSaveUser({
     username: req.body.username
   }, function (err, data) {
     if (err) {
       console.log("ERROR", err)
-      return;
+      res.json({"error": err});
     }
 
     console.log("Al parecer todo ok: ", data)
+    res.json({
+      username: data.username,
+      _id: data._id
+    })
   })
+})
+
+app.get("/api/users", function (req, res) {
+
 })
 //#endregion
 
