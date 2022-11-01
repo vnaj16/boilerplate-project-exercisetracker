@@ -101,15 +101,37 @@ const createAndSaveExercise = (username, exercise, done) => {
   })
 }
 
-const getExercisesByUsername = (username, done) => {
-  Exercise.find({username: username}, function (err, data){
-    if (err) {
-      console.error(err);
-      done(err);
-    }
-    console.log("Exercises found", data)
-    done(null , data);
-  })
+const getExercisesByUsername = (username, filters, done) => {
+  let dateFilterObject = null;
+  let from = filters.from;
+  let to = filters.to;
+  if (from && to) {
+    dateFilterObject = { $gte: new Date(filters.from), $lte: new Date(filters.to) };
+  }
+  else if (from) {
+    dateFilterObject = { $gte: new Date(filters.from) };
+  }
+  else if (to) {
+    dateFilterObject = { $lte: new Date(filters.to) };
+  }
+
+  let filterToApply = { username: username }
+
+  if (dateFilterObject) {
+    filterToApply.date = dateFilterObject
+  }
+
+  Exercise.find(filterToApply)
+    .limit(filters.limit ? parseInt(filters.limit) : 100)
+    .exec(function (err, data) {
+      if (err) {
+        console.error(err);
+        done(err);
+      }
+      console.log("Filters applied", filters)
+      console.log("Exercises found", data)
+      done(null, data);
+    })
 }
 //#endregion
 
@@ -147,14 +169,14 @@ app.get("/api/users", function (req, res) {
 app.post("/api/users/:id/exercises", function (req, res) {
   console.log(req.body)
   let userid = req.params.id;
-  getUserById(userid, function (err, foundUser){
+  getUserById(userid, function (err, foundUser) {
     let username = foundUser.username;
     let dateToRegiser = req.body.date;
-  
+
     if (!dateToRegiser) {
       dateToRegiser = new Date();
     }
-  
+
     let exerciseToRegister = {
       description: req.body.description,
       duration: req.body.duration,
@@ -165,14 +187,14 @@ app.post("/api/users/:id/exercises", function (req, res) {
         console.log("ERROR", err)
         res.json({ "error": err });
       }
-  
+
       console.log("Al parecer todo ok - CREATE AND SAVE EXERCISE: ", data)
       let response = {
+        _id: data._id.toString(),
         username: data.username,
-        description: data.description,
-        duration: data.duration,
         date: data.date.toDateString(),
-        _id: data._id
+        duration: data.duration,
+        description: data.description
       }
       console.log("Response - Post Exercise", response)
       res.json(response)
@@ -181,21 +203,24 @@ app.post("/api/users/:id/exercises", function (req, res) {
 })
 
 
-app.get("/api/users/:id/logs", function (req, res){
+app.get("/api/users/:id/logs", function (req, res) {
   // console.log(req.body)
   console.log("Query Params for Get Logs: ", req.query)
   let userid = req.params.id;
-  getUserById(userid, function (err, foundUser){
+  getUserById(userid, function (err, foundUser) {
     let username = foundUser.username;
-    let fromParam = req.query.from;
-    let toParam = req.query.to;
-    let limit = req.query.limit;
-    getExercisesByUsername(username, function (err, exercises) {
+    let filters = {
+      from: req.query.from,
+      to: req.query.to,
+      limit: req.query.limit
+    }
+
+    getExercisesByUsername(username, filters, function (err, exercises) {
       if (err) {
         console.log("ERROR", err)
         res.json({ "error": err });
       }
-  
+
       // console.log("Al parecer todo ok - GET LOGS: ", exercises)
       let response = {
         username: username,
