@@ -35,15 +35,26 @@ const createAndSaveUser = (user, done) => {
       console.error(err);
       done(err);
     }
-    console.log("Person created", data)
+    //console.log("Person created", data)
     done(null, data);
   })
 };
+
+const getAllUsers = (done) => {
+  User.find(function(err, data){
+    if (err) {
+      console.error(err);
+      done(err);
+    }
+    console.log("People found", data)
+    done(null , data);
+  })
+}
 //#endregion
 
 //#region Create a New User
 app.post("/api/users", function (req, res) {
-  console.log(req.body)
+  //console.log(req.body)
   createAndSaveUser({
     username: req.body.username
   }, function (err, data) {
@@ -52,7 +63,7 @@ app.post("/api/users", function (req, res) {
       res.json({"error": err});
     }
 
-    console.log("Al parecer todo ok: ", data)
+    //console.log("Al parecer todo ok: ", data)
     res.json({
       username: data.username,
       _id: data._id
@@ -61,7 +72,15 @@ app.post("/api/users", function (req, res) {
 })
 
 app.get("/api/users", function (req, res) {
+  getAllUsers(function (err, data){
+    if (err) {
+      console.log("ERROR", err)
+      res.json({"error": err});
+    }
 
+    console.log("Al parecer todo ok - GET ALL USERS: ", data)
+    res.json(data)
+  })
 })
 //#endregion
 
