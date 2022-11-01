@@ -61,14 +61,25 @@ const createAndSaveUser = (user, done) => {
   })
 };
 
+const getUserById = (id, done) => {
+  User.findById(id, function (err, data) {
+    if (err) {
+      console.error(err);
+      done(err);
+    }
+    console.log("User found", data)
+    done(null, data);
+  })
+}
+
 const getAllUsers = (done) => {
-  User.find(function(err, data){
+  User.find(function (err, data) {
     if (err) {
       console.error(err);
       done(err);
     }
     // console.log("People found", data)
-    done(null , data);
+    done(null, data);
   })
 }
 
@@ -89,6 +100,17 @@ const createAndSaveExercise = (username, exercise, done) => {
     done(null, data);
   })
 }
+
+const getExercisesByUsername = (username, done) => {
+  Exercise.find({username: username}, function (err, data){
+    if (err) {
+      console.error(err);
+      done(err);
+    }
+    console.log("Exercises found", data)
+    done(null , data);
+  })
+}
 //#endregion
 
 //#region Create a New User
@@ -99,7 +121,7 @@ app.post("/api/users", function (req, res) {
   }, function (err, data) {
     if (err) {
       console.log("ERROR", err)
-      res.json({"error": err});
+      res.json({ "error": err });
     }
 
     //console.log("Al parecer todo ok: ", data)
@@ -111,10 +133,10 @@ app.post("/api/users", function (req, res) {
 })
 
 app.get("/api/users", function (req, res) {
-  getAllUsers(function (err, data){
+  getAllUsers(function (err, data) {
     if (err) {
       console.log("ERROR", err)
-      res.json({"error": err});
+      res.json({ "error": err });
     }
 
     // console.log("Al parecer todo ok - GET ALL USERS: ", data)
@@ -123,21 +145,73 @@ app.get("/api/users", function (req, res) {
 })
 
 app.post("/api/users/:id/exercises", function (req, res) {
+  console.log(req.body)
   let userid = req.params.id;
-  let username = userid; //TODO: pending retrieve the username by id
-  let exerciseToRegister = {
-    description: req.body.description,
-    duration: req.body.duration,
-    date: req.body.date
-  }
-  createAndSaveExercise(username, exerciseToRegister, function (err, data){
-    if (err) {
-      console.log("ERROR", err)
-      res.json({"error": err});
+  getUserById(userid, function (err, foundUser){
+    let username = foundUser.username;
+    let dateToRegiser = req.body.date;
+  
+    if (!dateToRegiser) {
+      dateToRegiser = new Date();
     }
+  
+    let exerciseToRegister = {
+      description: req.body.description,
+      duration: req.body.duration,
+      date: dateToRegiser
+    }
+    createAndSaveExercise(username, exerciseToRegister, function (err, data) {
+      if (err) {
+        console.log("ERROR", err)
+        res.json({ "error": err });
+      }
+  
+      console.log("Al parecer todo ok - CREATE AND SAVE EXERCISE: ", data)
+      let response = {
+        username: data.username,
+        description: data.description,
+        duration: data.duration,
+        date: data.date.toDateString(),
+        _id: data._id
+      }
+      console.log("Response - Post Exercise", response)
+      res.json(response)
+    })
+  })
+})
 
-    console.log("Al parecer todo ok - CREATE AND SAVE EXERCISE: ", data)
-    res.json(data)
+
+app.get("/api/users/:id/logs", function (req, res){
+  // console.log(req.body)
+  console.log("Query Params for Get Logs: ", req.query)
+  let userid = req.params.id;
+  getUserById(userid, function (err, foundUser){
+    let username = foundUser.username;
+    let fromParam = req.query.from;
+    let toParam = req.query.to;
+    let limit = req.query.limit;
+    getExercisesByUsername(username, function (err, exercises) {
+      if (err) {
+        console.log("ERROR", err)
+        res.json({ "error": err });
+      }
+  
+      // console.log("Al parecer todo ok - GET LOGS: ", exercises)
+      let response = {
+        username: username,
+        count: exercises.length,
+        _id: foundUser._id,
+        log: exercises.map(e => {
+          return {
+            description: e.description,
+            duration: e.duration,
+            date: e.date.toDateString()
+          }
+        })
+      }
+      // console.log("Response", response)
+      res.json(response)
+    })
   })
 })
 //#endregion
